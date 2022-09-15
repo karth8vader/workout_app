@@ -30,7 +30,9 @@ CREATE_EXERCISE_HISTORY = """CREATE TABLE IF NOT EXISTS exercise_history (
 );"""
 
 INSERT_EXERCISE = "INSERT INTO exercises (name, type_code) VALUES (?, ?);"
+INSERT_WORKOUT = "INSERT INTO workouts (name, exercises) VALUES (?, ?);"
 SELECT_ALL_EXERCISES = "SELECT * FROM exercises;"
+SELECT_ALL_WORKOUTS = "SELECT * FROM workouts;"
 
 connection = sqlite3.connect("data.db")
 
@@ -48,8 +50,21 @@ def add_exercise(name: str, type_code: str):
         connection.execute(INSERT_EXERCISE, (name, type_code))
 
 
-def get_exercises():
+def get_exercises() -> list(list()):
     with connection:
         cursor = connection.cursor()
         cursor.execute(SELECT_ALL_EXERCISES)
         return cursor.fetchall()
+
+
+def add_workout(name: str, exercises: str):
+    with connection:
+        connection.execute(INSERT_WORKOUT, (name, exercises))
+
+
+def get_workouts() -> list(list()):
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute(SELECT_ALL_WORKOUTS)
+        return cursor.fetchall()
+
