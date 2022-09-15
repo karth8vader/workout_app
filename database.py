@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 
 CREATE_EXERCISE_TABLE = """CREATE TABLE IF NOT EXISTS exercises (
     id INTEGER PRIMARY KEY,
@@ -31,8 +32,14 @@ CREATE_EXERCISE_HISTORY = """CREATE TABLE IF NOT EXISTS exercise_history (
 
 INSERT_EXERCISE = "INSERT INTO exercises (name, type_code) VALUES (?, ?);"
 INSERT_WORKOUT = "INSERT INTO workouts (name, exercises) VALUES (?, ?);"
+INSERT_WORKOUT_HISTORY = "INSERT INTO workout_history (timestamp, workout_id) VALUES (?, ?);"
+INSERT_EXERCISE_HISTORY = """INSERT INTO exercise_history (
+    exercise_id, workout_history_id, repetitions, weight, duration) 
+    VALUES (?, ?, ?, ?, ?);"""
 SELECT_ALL_EXERCISES = "SELECT * FROM exercises;"
 SELECT_ALL_WORKOUTS = "SELECT * FROM workouts;"
+SELECT_EXERCISES = "SELECT exercises FROM workouts WHERE id = ?;"
+SELECT_EXERCISE_CODE = "SELECT type_code FROM exercises WHERE id = ?;"
 
 connection = sqlite3.connect("data.db")
 
@@ -50,7 +57,7 @@ def add_exercise(name: str, type_code: str):
         connection.execute(INSERT_EXERCISE, (name, type_code))
 
 
-def get_exercises() -> list(list()):
+def get_exercises() -> list[list]:
     with connection:
         cursor = connection.cursor()
         cursor.execute(SELECT_ALL_EXERCISES)
@@ -62,9 +69,35 @@ def add_workout(name: str, exercises: str):
         connection.execute(INSERT_WORKOUT, (name, exercises))
 
 
-def get_workouts() -> list(list()):
+def get_workouts() -> list[list]:
     with connection:
         cursor = connection.cursor()
         cursor.execute(SELECT_ALL_WORKOUTS)
         return cursor.fetchall()
 
+
+def get_exercise_list(workout_id: int) -> list[int]:
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute(SELECT_EXERCISES, (workout_id,))
+        return cursor.fetchone()[0].split(',')
+
+
+def log_workout(workout_id: int) -> int:
+    with connection:
+        now = datetime.now().timestamp()
+        cursor = connection.cursor()
+        cursor.execute(INSERT_WORKOUT_HISTORY, (now, workout_id))
+        return cursor.lastrowid
+
+
+def get_type_code(exercise_id: int) -> str:
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute(SELECT_EXERCISE_CODE, (exercise_id,))
+        return cursor.fetchone()[0]
+
+
+def log_exercise(exercise_id: int, workout_history_id: int, repetitions: int, weight: float, duration: float):
+    with connection:
+        connection.execute(INSERT_EXERCISE_HISTORY, (exercise_id, workout_history_id, repetitions, weight, duration))
