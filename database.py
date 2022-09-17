@@ -38,8 +38,10 @@ INSERT_EXERCISE_HISTORY = """INSERT INTO exercise_history (
     VALUES (?, ?, ?, ?, ?);"""
 SELECT_ALL_EXERCISES = "SELECT * FROM exercises;"
 SELECT_ALL_WORKOUTS = "SELECT * FROM workouts;"
-SELECT_EXERCISES = "SELECT exercises FROM workouts WHERE id = ?;"
-SELECT_EXERCISE_CODE = "SELECT type_code FROM exercises WHERE id = ?;"
+SELECT_EXERCISE_LIST = "SELECT exercises FROM workouts WHERE id = ?;"
+SELECT_EXERCISE = "SELECT name, type_code FROM exercises WHERE id = ?;"
+SELECT_EXERCISE_HISTORY = "SELECT * FROM exercise_history WHERE exercise_id = ?;"
+SELECT_WORKOUT_HISTORY_TIMESTAMP = "SELECT timestamp FROM workout_history WHERE id = ?;"
 
 connection = sqlite3.connect("data.db")
 
@@ -79,7 +81,7 @@ def get_workouts() -> list[list]:
 def get_exercise_list(workout_id: int) -> list[int]:
     with connection:
         cursor = connection.cursor()
-        cursor.execute(SELECT_EXERCISES, (workout_id,))
+        cursor.execute(SELECT_EXERCISE_LIST, (workout_id,))
         return cursor.fetchone()[0].split(',')
 
 
@@ -91,13 +93,28 @@ def log_workout(workout_id: int) -> int:
         return cursor.lastrowid
 
 
-def get_type_code(exercise_id: int) -> str:
+def get_exercise(exercise_id: int) -> tuple[str, str]:
     with connection:
         cursor = connection.cursor()
-        cursor.execute(SELECT_EXERCISE_CODE, (exercise_id,))
-        return cursor.fetchone()[0]
+        cursor.execute(SELECT_EXERCISE, (exercise_id,))
+        result = cursor.fetchone()
+        return result[0], result[1]
 
 
 def log_exercise(exercise_id: int, workout_history_id: int, repetitions: int, weight: float, duration: float):
     with connection:
         connection.execute(INSERT_EXERCISE_HISTORY, (exercise_id, workout_history_id, repetitions, weight, duration))
+
+
+def get_exercise_history(exercise_id: int) -> list[list]:
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute(SELECT_EXERCISE_HISTORY, (exercise_id,))
+        return cursor.fetchall()
+
+
+def get_workout_timestamp(workout_history_id) -> float:
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute(SELECT_WORKOUT_HISTORY_TIMESTAMP, (workout_history_id,))
+        return cursor.fetchone()[0]

@@ -1,4 +1,5 @@
 import database
+import matplotlib.pyplot as plt
 
 MENU_PROMPT = """
 1. Add an exercise
@@ -6,7 +7,8 @@ MENU_PROMPT = """
 3. Create a workout
 4. View workouts
 5. Start a workout
-6. Exit
+6. View exercise history
+7. Exit
 
 Your selection: """
 TYPE_CODE_PROMPT = """Choose exercise type:
@@ -77,7 +79,8 @@ def select_workout():
 	# log workout in history table
 	workout_id = database.log_workout(choice)
 	for exercise_id in exercise_ids:
-		type_code = database.get_type_code(exercise_id)
+		name, type_code = database.get_exercise(exercise_id)
+		print(name)
 		if type_code == 'r__':
 			repetitions = int(input("# of repetitions: "))
 			database.log_exercise(exercise_id, workout_id, repetitions, 0.0, 0.0)
@@ -94,6 +97,43 @@ def select_workout():
 			database.log_exercise(exercise_id, workout_id, 0, weight, duration)
 
 
+def view_exercise_history():
+	print_exercise_list()
+	exercise_id = int(input("Choice: "))
+	exercise_history = database.get_exercise_history(exercise_id)
+	name, type_code = database.get_exercise(exercise_id)
+	workout_totals = {}
+	if type_code == 'r__':
+		for exercise in exercise_history:
+			if exercise[1] not in workout_totals:
+				workout_totals[exercise[1]] = 0
+			workout_totals[exercise[1]] += exercise[2]
+	elif type_code == 'rw_':
+		for exercise in exercise_history:
+			if exercise[1] not in workout_totals:
+				workout_totals[exercise[1]] = 0
+			workout_totals[exercise[1]] += exercise[2] * exercise[3]
+	elif type_code == '__d':
+		for exercise in exercise_history:
+			if exercise[1] not in workout_totals:
+				workout_totals[exercise[1]] = 0
+			workout_totals[exercise[1]] += exercise[4]
+	elif type_code == '_wd':
+		for exercise in exercise_history:
+			if exercise[1] not in workout_totals:
+				workout_totals[exercise[1]] = 0
+			workout_totals[exercise[1]] += exercise[4] * exercise[3]
+
+	x = []
+	y = []
+	for key in workout_totals:
+		x.append(database.get_workout_timestamp(key))
+		y.append(workout_totals[key])
+	plt.title(f"Total volume per workout: {name}")
+	plt.plot(x, y, '-o')
+	plt.show()
+
+
 def main() -> None:
 	print("Welcome to the workout app")
 	database.create_tables()
@@ -102,9 +142,10 @@ def main() -> None:
 		'2': print_exercise_list,
 		'3': prompt_add_workout,
 		'4': print_workout_list,
-		'5': select_workout
+		'5': select_workout,
+		'6': view_exercise_history
 	}
-	while (user_input := input(MENU_PROMPT)) != '6':
+	while (user_input := input(MENU_PROMPT)) != '7':
 		user_input_dict[user_input]()
 
 
